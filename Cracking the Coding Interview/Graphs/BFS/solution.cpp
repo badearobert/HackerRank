@@ -3,118 +3,73 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include <unordered_map>
-#include <set>
-
+#include <map>
+#include <queue>
 using namespace std;
+
+const int EDGE_DISTANCE = 6;
+const vector<int> EmptyVec;
 
 class Graph 
 {
     public:
-        class Node 
-        {
-            public:
-            Node(int _data) : data(_data) { }
-            void addEdge(int data) 
-            { 
-                connections.emplace_back(Node(data)); 
-            }
-            const vector<Node>& getConnections() { return connections; }
-            int getData() const { return data; }
-            //private:
-            int data;
-            vector<Node> connections;
-        };
 
-        Graph(int n)
+        Graph(int n) 
         {
             mVecSize = n;
             for (int i = 0 ; i < mVecSize; ++i) 
             {
-                mNodes.emplace_back( Node( i ) );
+                mNodes[i] = EmptyVec;
             }
         }
     
         void add_edge(int u, int v) 
         {
-            mNodes[u].addEdge(v);
-            mNodes[v].addEdge(u);
-            addToCache(u, v);
-            addToCache(v, u);
-        }
-
-        void addToCache(int start, int end, int distance = 6) 
-        {
-            string key = cacheData(start, end);
-            distances[key] = distance;
-        }
-
-        bool isInCache(int start, int end) 
-        {
-            string key = cacheData(start, end);
-            return ( distances.find(key) != distances.end() );
-        }
-
-        int getDistanceFromCache(int start, int end)
-        {
-            string key = cacheData(start, end);
-            return distances[key];
+            mNodes[u].push_back(v);
+            mNodes[v].push_back(u);
         }
     
-        vector<int> shortest_reach(int start)
+        vector<int> shortest_reach(int start) 
         {
-            vector< int > results;
-            set<int> visitedNodes;
-            for (int end = 0 ; end < mVecSize; ++end) 
+            // create vec of distances with -1 at start
+            vector<int> distances;
+            for (int i = 0; i < mVecSize; ++i) 
             {
-                int result = BFS(start, end, visitedNodes);
-                results.push_back(result);
+                distances.push_back(-1);
             }
-            return results;
-        }
-    
-    int BFS(int start, int end, set<int> &visitedNodes, int recursiveStep = 1) 
-    {
-        if (start == end) 
-        {
-            return -1;
-        }
-        if (isInCache(start, end)) 
-        {
-            return getDistanceFromCache(start,end);
-        }
-
-        // not found, need to calculate
-        const vector<Node> & connections = mNodes[start].getConnections();
-        for (int index = 0; index < connections.size(); index++) 
-        {
-            const Node& node = connections[index];
-            int nodeData = node.getData();
-            if (visitedNodes.find(nodeData) != visitedNodes.end())
+            
+            // distance to itself is always 0
+            distances[start] = 0;
+            
+            // add the current element in queue
+            queue<int> IterationQueue;    
+            IterationQueue.push(start);
+            
+            while (false == IterationQueue.empty() ) 
             {
-                visitedNodes.insert(nodeData);
-                if (isInCache(nodeData, end)) 
+                // get next element
+                const int& currentNode = IterationQueue.front();
+
+                // iterate through neighbours and set their distance
+                for (const int & closestNeighbor : mNodes[currentNode] )
                 {
-                    return getDistanceFromCache(nodeData, end);
+                    // if it wasn't visited...
+                    if (distances[closestNeighbor] == -1) 
+                    {
+                        distances[closestNeighbor] = distances[currentNode] + EDGE_DISTANCE;
+                        IterationQueue.push(closestNeighbor);
+                    }
                 }
-                int distance = BFS(nodeData, end, visitedNodes, recursiveStep + 1);
-                addToCache(nodeData, end, distance * recursiveStep);
-                return distance;
-            }
-        }
-        addToCache(start, end, -1);
-        return -1;
-        
-    }
-    string cacheData(int start, int end) 
-    {
-        return to_string(start) + "-" + to_string(end);
-    }
 
-    private:
+                IterationQueue.pop();
+            }
+            
+            return distances;
+            
+        }
+    
     int mVecSize;
-    vector<Node> mNodes;
-    unordered_map<string, int> distances;
+    map< int, vector<int> > mNodes;
 };
 
 int main() {
