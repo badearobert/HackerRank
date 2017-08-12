@@ -14,7 +14,7 @@ bool has_cycle(Node* head)
     unordered_set<Node*> visited;
     while (head != nullptr) 
     {
-        if (visited.find(head) == visited.end() ) 
+        if (visited.find(head) == visited.end()) 
         {
             visited.insert(head);
             head = head->next;
